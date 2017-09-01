@@ -30,8 +30,8 @@
 #define NUM_STREAMS 3           /* Maximal number of streams (fixed, periodic, poason) */
 #define NUM_PACKETS 32          /* Maximal number of packets in a stream that can be listed inside the config file */
 #define DATA_SIZE 9             /* Number od bits that can be sent to the bus - 1 */
-//#define DEBUG_PARSER
-
+#define DEBUG_PARSER
+#define DEBUG
 
 /**
  * @brief Mapping from enum values to string 

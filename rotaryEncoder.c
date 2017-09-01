@@ -24,11 +24,11 @@ void rotaryDeal()
 		flag = 0;
 		if((Last_RoB_Status == 0)&&(Current_RoB_Status == 1)){
 			globalCounter++;
-			printf("%d", globalCounter);
+//			printf("%d", globalCounter);
 		}
 		if((Last_RoB_Status == 1)&&(Current_RoB_Status == 0)){
 			globalCounter--;
-			printf("%d", globalCounter);
+//			printf("%d", globalCounter);
 		}
 
 	}

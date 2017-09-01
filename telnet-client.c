@@ -136,7 +136,7 @@ int telnet_construct(telnet_config_t *config) {
 	memset(&config->hints, 0, sizeof(config->hints));
 	config->hints.ai_family = AF_UNSPEC;
 	config->hints.ai_socktype = SOCK_STREAM;
-	if ((config->rs = getaddrinfo("127.0.0.1", "7070", &(config->hints), &(config->ai))) != 0) {
+	if ((config->rs = getaddrinfo("10.80.11.77", "7070", &(config->hints), &(config->ai))) != 0) {
 		fprintf(stderr, "getaddrinfo() failed for 127.0.0.1: %s\n",
 				gai_strerror(config->rs));
 		return 1;
