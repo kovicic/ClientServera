@@ -1,5 +1,14 @@
 #include "telnet-client.h"
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
+char adresa[] = "111.111.111.111";
 static const telnet_telopt_t telopts[] = {
 	{ TELNET_TELOPT_ECHO,		TELNET_WONT, TELNET_DO   },
 	{ TELNET_TELOPT_TTYPE,		TELNET_WILL, TELNET_DONT },
@@ -130,14 +139,50 @@ void func(telnet_config_t *config, char *command) {
 	return;
 }
 
+void getRaspberryIP()
+{
+    struct ifaddrs *ifaddr, *ifa;
+    int family, s;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) == -1) 
+    {
+        perror("getifaddrs");
+        exit(EXIT_FAILURE);
+    }
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) 
+    {	
+        if (ifa->ifa_addr == NULL)
+            continue;  
+
+        s=getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in),host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+        if((strcmp(ifa->ifa_name,"eth0")==0)&&(ifa->ifa_addr->sa_family==AF_INET))
+        {
+            if (s != 0)
+            {
+                printf("getnameinfo() failed: %s\n", gai_strerror(s));
+                exit(EXIT_FAILURE);
+            }
+            /*printf("\tInterface : <%s>\n",ifa->ifa_name );*/
+            printf("Raspberry address is - %s\n", host); 
+	    strcpy(adresa, host);	
+        }
+    }
+    freeifaddrs(ifaddr);
+
+    //exit(EXIT_SUCCESS);
+
+}
 
 int telnet_construct(telnet_config_t *config) {
 	/* look up server host */
 	memset(&config->hints, 0, sizeof(config->hints));
+	getRaspberryIP();
 	config->hints.ai_family = AF_UNSPEC;
 	config->hints.ai_socktype = SOCK_STREAM;
-	if ((config->rs = getaddrinfo("10.80.11.77", "7070", &(config->hints), &(config->ai))) != 0) {
-		fprintf(stderr, "getaddrinfo() failed for 127.0.0.1: %s\n",
+	if ((config->rs = getaddrinfo(adresa, "7070", &(config->hints), &(config->ai))) != 0) {
+		fprintf(stderr, "getaddrinfo() failed for %s: %s\n",adresa,
 				gai_strerror(config->rs));
 		return 1;
 	}

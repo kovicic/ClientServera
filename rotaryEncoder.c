@@ -19,16 +19,24 @@ void rotaryDeal()
 		Current_RoB_Status = digitalRead(RoBPin);
 		flag = 1;
 	}
-
 	if(flag == 1){
 		flag = 0;
 		if((Last_RoB_Status == 0)&&(Current_RoB_Status == 1)){
-			globalCounter++;
-//			printf("%d", globalCounter);
+			if(globalCounter < 240)
+			{
+				globalCounter++;
+			}
 		}
 		if((Last_RoB_Status == 1)&&(Current_RoB_Status == 0)){
-			globalCounter--;
-//			printf("%d", globalCounter);
+			if(globalCounter > 0)
+			{
+				globalCounter--;
+			}
+			else
+			{
+				globalCounter = 0;
+			}
+			//printf("%d", globalCounter);
 		}
 
 	}

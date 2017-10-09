@@ -80,7 +80,7 @@ void *rotary(void *param);
  */
 void prepare_can() {
 	int i;
-	
+	printf("num of streams is %d\n",NUM_STREAMS);
 	for (i = 0; i< NUM_STREAMS; i++) {
 		if (init.can.streams[i].mode == FIXED)
 			can_fixed_id = i;
@@ -141,6 +141,8 @@ void prepare_lin() {
 		else if (init.lin.streams[i].mode == POASON)
 			lin_poason_id = i;
 	} 
+	
+	
 
 	
 	/* Create threads and set number of periodic packets and period_time array */
@@ -165,10 +167,8 @@ void prepare_lin() {
 	}
 		if (lin_poason_id != -1) {
         	packets_exist = 1;
-		printf("BEFORE WHILE\n");
 		while (init.lin.streams[lin_poason_id].packets[lin_num_poason].time !=0) {
 			lin_poason_time[lin_num_poason] = poason(init.lin.streams[lin_poason_id].packets[lin_num_poason].time);
-		printf("IN WHILE\n");
 			lin_num_poason++;
 		}
 		pthread_create(&pt,NULL,lin_poason,NULL);
@@ -308,6 +308,7 @@ void *lin_poason(void *param) {
 		lin_poason_time[i] += poason(init.lin.streams[lin_poason_id].packets[i].time);
 		start_time = end_time;
 		end_time = min_time(lin_poason_time, &i, lin_num_poason);
+		//printf(" START Time is %d END time is %d\n", start_time, end_time);
 	}
 	printf("Ending poason thread\n");
 }
@@ -337,6 +338,11 @@ void separate(char *buffer, char *string)
 			
 		return;
 }
+void convert(char *buffer, int number)
+{
+	int result = number + 50;
+	sprintf(buffer, "%04x", result);
+}
 
 /**
  * @brief  adds 50 and converts number to hex string 
@@ -346,12 +352,44 @@ void separate(char *buffer, char *string)
  * @param  [out]  
  * @return 
  */
-void convert(char *buffer, int number)
+void convertKMH(char *buffer, int number)
 {
-	int result = number + 50;
-	sprintf(buffer, "%04x", result);
+	//int result = number + 50;
+	//number = 120;
+	if(number < 10 && number >= 0)
+	{
+		sprintf(buffer,"%03x%01d",0,number);
+	}
+	else if(number > 9 && number < 100)
+	{
+		sprintf(buffer,"%02x%02d" ,0,number);
+	}
+	else if(number > 100)
+	{
+		sprintf(buffer, "%01x%03d",0,number);
+	}
 }
-
+void convertRPM(char *buffer, int number)
+{
+	number *= 20;
+	//number = 3400;
+	if(number < 10 && number >= 0)
+	{
+		sprintf(buffer,"%03x%01d",0,number);
+	}
+	else if(number > 9 && number < 100)
+	{
+		sprintf(buffer,"%02x%02d" ,0,number);
+	}
+	else if(number > 100 && number < 1000)
+	{
+		sprintf(buffer, "%01x%03d",0,number);
+	}
+	else
+	{
+		sprintf(buffer,"%04d",number);
+	}	
+}
 int main(int argc, const char* argv[])
 {
    	struct timeval endwait;
@@ -360,6 +398,7 @@ int main(int argc, const char* argv[])
    	struct timeval start;
 	double dif;
 	char tmp[MAX_CHARACTERS * 2], buf[MAX_CHARACTERS * 2];
+	char Pid[MAX_CHARACTERS * 2];
 	telnet_config_t config;
 	char bff[5];
 	strcpy(buf,"");
@@ -369,13 +408,12 @@ int main(int argc, const char* argv[])
 	pthread_mutex_init(&mutex, NULL);
 	buffer_init(&buffer_prior);
 	pthread_create(&pt,NULL,rotary,NULL);
-
 	prepare_can();
 	prepare_lin();
 
 	/* Andrej testing area */
 	func(&config, "AT\n");
-	sprintf(tmp, "CAN USER OPEN CH2 %s\n", mapping[init.can.baudrate]);
+	sprintf(tmp, "CAN USER OPEN CH2 %s\n", mapping[init.can.baudrate]); 
 	func(&config, tmp);
 	sprintf(tmp, "CAN USER ALIGN %s\n", mapping[init.can.alignment + 7]);
 	func(&config, tmp);
@@ -394,8 +432,17 @@ int main(int argc, const char* argv[])
 			if (getMiliTimeDiff(check,current) >= 0) {
 				pthread_mutex_lock(&mutex);
 				if (buffer_prior.head->type == CAN)	{
-					convert(bff, get());
-					
+
+					//convert(bff, get());
+					//srediti ovaj konvert smrdljivi
+					if(strcmp(buffer_prior.head->data.PID,"4400"))
+					{
+						convertKMH(bff, get());
+					}
+					else if(strcmp(buffer_prior.head->data.PID,"5500"))
+					{
+						convertRPM(bff, get());
+					}
 					sprintf(tmp, "CAN USER TX CH2 %s %s%s\n", buffer_prior.head->data.PID, buffer_prior.head->data.data, bff );
 					func(&config, tmp);
 				} else {
@@ -404,9 +451,9 @@ int main(int argc, const char* argv[])
 						sprintf(tmp, "LIN SR %s %s\n", buffer_prior.head->data.PID, buf);
 						func(&config, tmp);
 					} else {
-						convert(buf, get());
+						//convert(buf, get());
 						separate(buf, buf);
-						sprintf(tmp, "LIN SR %s %s\n", buffer_prior.head->data.PID, buf); 
+						sprintf(tmp, "LIN SR %s 46\n", buffer_prior.head->data.PID); 
 						func(&config, tmp);
 					}
 				}

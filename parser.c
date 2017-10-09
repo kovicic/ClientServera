@@ -196,9 +196,15 @@ void get_config(const char *path, init_data_t *init)
         
         file.tmp[5] = '\0';
         if (strcmp(file.tmp, "[CAN]") == 0)
+        {
+			printf("procitao CAN\n");
             get_can_config(&file, &(init->can));
+		}
         else if (strcmp(file.tmp, "[LIN]") == 0)
+        {
+			printf("procitao LIN\n");
             get_lin_config(&file, &(init->lin));
+		}
         else if (strcmp(file.tmp, "[END]") == 0)
         {
             fgets(file.tmp, MAX_CHARACTERS, file.conf);
